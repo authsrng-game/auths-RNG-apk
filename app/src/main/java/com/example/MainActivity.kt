@@ -161,7 +161,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             RngWebView(
-                                url = intent?.dataString ?: "https://authsrng.xyz",
+                                url = intent?.dataString ?: "https://native.authsrng.xyz",
                                 modifier = Modifier.fillMaxSize(),
                                 isOffline = isOffline,
                                 onOfflineStatusChanged = { offline ->
@@ -432,7 +432,7 @@ fun RngWebView(
                         val requestUrl = request?.url ?: return false
                         val host = requestUrl.host ?: return false
                         
-                        if (host.endsWith("authsrng.xyz")) {
+                        if (host.endsWith("native.authsrng.xyz")) {
                             return false
                         }
                         
