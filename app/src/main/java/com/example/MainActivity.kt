@@ -206,61 +206,13 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             if (pageError != null) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(DarkBackground)
-                                        .padding(24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Warning,
-                                        contentDescription = "error icon",
-                                        tint = MinimalWhite,
-                                        modifier = Modifier.size(48.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "failed to load page",
-                                        color = MinimalWhite,
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .weight(1f)
-                                            .background(DarkSurface, RoundedCornerShape(8.dp))
-                                            .padding(16.dp)
-                                            .verticalScroll(rememberScrollState())
-                                    ) {
-                                        Text(
-                                            text = pageError ?: "",
-                                            color = Zinc400,
-                                            fontSize = 12.sp,
-                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                                        )
+                                OfflineScreen(
+                                    error = pageError,
+                                    onRetry = {
+                                        pageError = null
+                                        webViewInstance?.reload()
                                     }
-                                    Spacer(modifier = Modifier.height(24.dp))
-                                    Button(
-                                        onClick = {
-                                            pageError = null
-                                            webViewInstance?.reload()
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MinimalWhite,
-                                            contentColor = DarkBackground
-                                        ),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Text(
-                                            text = "retry",
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
+                                )
                             }
                         }
 
