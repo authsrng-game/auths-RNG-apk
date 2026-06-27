@@ -1,0 +1,1 @@
+removed non-FOSS dependencies. app is now fully FOSS-compliant.
