@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         try {
             val baseCacheDir = java.io.File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
             java.io.File(baseCacheDir, "js").mkdirs()
@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-        
+
         enableEdgeToEdge()
 
         setContent {
@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                 var canGoBack by remember { mutableStateOf(false) }
                 var pageError by remember { mutableStateOf<String?>(null) }
                 var rawLogs by remember { mutableStateOf("") }
-                
+
                 var webViewInstance by remember { mutableStateOf<WebView?>(null) }
 
                 LaunchedEffect(Unit) {
@@ -129,7 +129,7 @@ class MainActivity : ComponentActivity() {
                         val lastClearTime = sharedPrefs.getLong("last_cache_clear_time", 0L)
                         val currentTime = System.currentTimeMillis()
                         val cacheClearInterval = 24 * 60 * 60 * 1000L
-                        
+
                         if (isNetworkAvailable(context) && (currentTime - lastClearTime > cacheClearInterval)) {
                             webView.clearCache(true)
                             try {
@@ -185,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                     rawLogs = log
                                 }
                             )
-                            
+
                             if (loadingProgress > 0f && loadingProgress < 1f) {
                                 LinearProgressIndicator(
                                     progress = { loadingProgress },
@@ -204,7 +204,7 @@ class MainActivity : ComponentActivity() {
                                         .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
                                 )
                             }
-                            
+
                             if (pageError != null) {
                                 OfflineScreen(
                                     error = pageError,
@@ -284,7 +284,7 @@ fun RngWebView(
             context
         }
     }
-    
+
     AndroidView(
         factory = { ctx ->
             val viewContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
@@ -313,11 +313,11 @@ fun RngWebView(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
-                
+
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                
+
                 keepScreenOn = true
-                
+
                 val gestureDetector = android.view.GestureDetector(viewContext, object : android.view.GestureDetector.SimpleOnGestureListener() {
                     private val SWIPE_THRESHOLD = 50
                     private val SWIPE_VELOCITY_THRESHOLD = 50
@@ -335,8 +335,8 @@ fun RngWebView(
                         if (e1 != null) {
                             val diffX = e2.x - e1.x
                             val diffY = e2.y - e1.y
-                            if (Math.abs(diffX) > Math.abs(diffY) * 0.8f && 
-                                Math.abs(diffX) > SWIPE_THRESHOLD && 
+                            if (Math.abs(diffX) > Math.abs(diffY) * 0.8f &&
+                                Math.abs(diffX) > SWIPE_THRESHOLD &&
                                 Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                                 performHapticFeedback(
                                     android.view.HapticFeedbackConstants.VIRTUAL_KEY,
@@ -352,38 +352,38 @@ fun RngWebView(
                     gestureDetector.onTouchEvent(event)
                     false
                 }
-                
+
                 settings.userAgentString = "Mozilla/5.0 (Linux; Android 12; Pixel 6 Build/SD1A.210817.023; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/94.0.4606.71 Mobile Safari/537.36 Native App"
-                
+
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 @Suppress("DEPRECATION")
                 settings.databaseEnabled = true
                 settings.allowFileAccess = true
                 settings.allowContentAccess = true
-                
+
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                
+
                 android.webkit.CookieManager.getInstance().setAcceptCookie(true)
                 android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                
+
                 settings.setSupportZoom(false)
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
                 setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                
+
                 @Suppress("DEPRECATION")
                 settings.setRenderPriority(WebSettings.RenderPriority.HIGH)
-                
+
                 settings.cacheMode = if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
-                
+
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode = 
+                    android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode =
                         if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
                 }
-                
+
                 val logsList = mutableListOf<String>()
                 fun addLog(msg: String) {
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -392,16 +392,16 @@ fun RngWebView(
                         onLogEvent(logsList.joinToString("\n"))
                     }
                 }
-                
+
                 webViewClient = object : WebViewClient() {
                     override fun shouldInterceptRequest(
                         view: WebView?,
                         request: WebResourceRequest?
                     ): android.webkit.WebResourceResponse? {
                         val requestUrl = request?.url?.toString() ?: return null
-                        
+
                         addLog("FETCH: ${request?.url?.path ?: requestUrl}")
-                        
+
                         // Explicitly check server connectivity for main frame requests
                         if (request.isForMainFrame && (requestUrl.startsWith("http://") || requestUrl.startsWith("https://"))) {
                             try {
@@ -411,9 +411,9 @@ fun RngWebView(
                                 connection.readTimeout = 3000
                                 val responseCode = connection.responseCode
                                 val isLive = responseCode in 200..399
-                                
+
                                 addLog("HEAD [${responseCode}]: isLive=$isLive")
-                                
+
                                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                                     onOfflineStatusChanged(!isLive)
                                 }
@@ -424,18 +424,18 @@ fun RngWebView(
                                 }
                             }
                         }
-                        
+
                         return super.shouldInterceptRequest(view, request)
                     }
 
                     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                         val requestUrl = request?.url ?: return false
                         val host = requestUrl.host ?: return false
-                        
+
                         if (host.endsWith("authsrng.xyz")) {
                             return false
                         }
-                        
+
                         try {
                             val intent = Intent(Intent.ACTION_VIEW, requestUrl)
                             context.startActivity(intent)
@@ -473,7 +473,7 @@ fun RngWebView(
                             onPageLoadError(errorLog)
                         }
                     }
-                    
+
                     override fun onReceivedHttpError(
                         view: WebView?,
                         request: WebResourceRequest?,
@@ -487,14 +487,14 @@ fun RngWebView(
                         }
                     }
                 }
-                
+
                 webChromeClient = object : WebChromeClient() {
                     override fun onProgressChanged(view: WebView?, newProgress: Int) {
                         super.onProgressChanged(view, newProgress)
                         onProgressChanged(newProgress)
                     }
                 }
-                
+
                 loadUrl(url)
                 onWebViewCreated(this)
             }
@@ -502,7 +502,7 @@ fun RngWebView(
         update = { webView ->
             webView.settings.cacheMode = if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode = 
+                android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode =
                     if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
             }
         },
@@ -528,7 +528,7 @@ fun networkStatusFlow(context: Context): Flow<Boolean> = callbackFlow {
             trySend(false)
         }
     }
-    
+
     try {
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -536,9 +536,9 @@ fun networkStatusFlow(context: Context): Flow<Boolean> = callbackFlow {
         connectivityManager.registerNetworkCallback(request, callback)
     } catch (e: Exception) {
     }
-    
+
     trySend(isNetworkAvailable(context))
-    
+
     awaitClose {
         try {
             connectivityManager.unregisterNetworkCallback(callback)
