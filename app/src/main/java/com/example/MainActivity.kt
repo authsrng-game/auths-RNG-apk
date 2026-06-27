@@ -432,7 +432,7 @@ fun RngWebView(
                         val requestUrl = request?.url ?: return false
                         val host = requestUrl.host ?: return false
                         
-                        if (host.endsWith("native.authsrng.xyz")) {
+                        if (host.endsWith("authsrng.xyz")) {
                             return false
                         }
                         
