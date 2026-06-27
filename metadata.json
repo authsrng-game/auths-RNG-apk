@@ -1,6 +1,5 @@
 {
   "name": "auth's RNG",
   "description": "the greatest RNG webgame of all time. roll, sell, buy, repeat. created by ivy (alias 'auth'). homepage: https://authsrng.xyz | privacy policy & tos: https://authsrng.xyz/boring/legal",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

@@ -1,0 +1,17 @@
+auth's RNG is a web-based incremental RNG game. roll for rarities, sell them out, buy upgrades, wish upon the wishing well, and collect as many rarities as possible!
+
+roll > sell > upgrade > unlock deeper systems > repeat!
+
+this is the official android client, featuring:
+- offline caching so the game loads without an internet connection
+- a dedicated offline mode screen when you're fully disconnected
+- haptic feedback on rolls
+- performance improvements baked into the app layer
+- a privacy-respecting build of the game (no third-party scripts)
+
+inspired by roblox RNG games like sol's RNG and juke's RNG, but to be clear, this is not a roblox game!
+
+disgustingly customizable. new customization features ship every update.
+
+check out the wiki for how to play and how everything works:
+https://github.com/authsrng-game/auths-RNG/wiki

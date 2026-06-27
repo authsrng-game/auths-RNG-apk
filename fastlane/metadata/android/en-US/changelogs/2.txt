@@ -1,0 +1,1 @@
+switched to the native build of auth's RNG (native.authsrng.xyz) for improved privacy, removed all non-required third-party scripts.
