@@ -1,0 +1,1 @@
+android app client for auth's RNG.
