@@ -78,14 +78,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        try {
-            val baseCacheDir = java.io.File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
-            java.io.File(baseCacheDir, "js").mkdirs()
-            java.io.File(baseCacheDir, "wasm").mkdirs()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -122,30 +114,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(webViewInstance) {
-                    val webView = webViewInstance ?: return@LaunchedEffect
-                    while (true) {
-                        kotlinx.coroutines.delay(60 * 60 * 1000L)
-                        val sharedPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                        val lastClearTime = sharedPrefs.getLong("last_cache_clear_time", 0L)
-                        val currentTime = System.currentTimeMillis()
-                        val cacheClearInterval = 24 * 60 * 60 * 1000L
-
-                        if (isNetworkAvailable(context) && (currentTime - lastClearTime > cacheClearInterval)) {
-                            webView.clearCache(true)
-                            try {
-                                val baseCacheDir = java.io.File(context.cacheDir, "WebView/Default/HTTP Cache/Code Cache")
-                                java.io.File(baseCacheDir, "js").mkdirs()
-                                java.io.File(baseCacheDir, "wasm").mkdirs()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                            sharedPrefs.edit().putLong("last_cache_clear_time", currentTime).apply()
-                            webView.reload()
-                        }
-                    }
+                    // Cache management logic removed for performance.
+                    // LOAD_CACHE_ELSE_NETWORK handles offline/online transitions better.
                 }
 
-                BackHandler(enabled = canGoBack && !isOffline) {
+                BackHandler(enabled = canGoBack) {
                     webViewInstance?.goBack()
                 }
 
@@ -157,16 +130,13 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .padding(innerPadding)
                             .background(DarkBackground)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
                             RngWebView(
                                 url = intent?.dataString ?: "https://native.authsrng.xyz",
                                 modifier = Modifier.fillMaxSize(),
-                                isOffline = isOffline,
-                                onOfflineStatusChanged = { offline ->
-                                    isOffline = offline
-                                },
                                 onWebViewCreated = { webView ->
                                     webViewInstance = webView
                                     this@MainActivity.webView = webView
@@ -186,9 +156,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
+                            val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+                                targetValue = loadingProgress,
+                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+                                label = "loadingProgress"
+                            )
+
                             if (loadingProgress > 0f && loadingProgress < 1f) {
                                 LinearProgressIndicator(
-                                    progress = { loadingProgress },
+                                    progress = { animatedProgress },
                                     modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
                                     color = MinimalWhite,
                                     trackColor = DarkSurface
@@ -198,14 +174,18 @@ class MainActivity : ComponentActivity() {
                                     color = MinimalWhite.copy(alpha = 0.6f),
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 9.sp,
-                                    maxLines = 6,
+                                    maxLines = 1,
                                     modifier = Modifier
                                         .align(Alignment.BottomStart)
-                                        .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
+                                        .padding(bottom = 8.dp, start = 16.dp, end = 16.dp)
                                 )
                             }
 
-                            if (pageError != null) {
+                            AnimatedVisibility(
+                                visible = pageError != null,
+                                enter = fadeIn(),
+                                exit = fadeOut()
+                            ) {
                                 OfflineScreen(
                                     error = pageError,
                                     onRetry = {
@@ -267,21 +247,22 @@ class MainActivity : ComponentActivity() {
 fun RngWebView(
     url: String,
     modifier: Modifier = Modifier,
-    isOffline: Boolean,
-    onOfflineStatusChanged: (Boolean) -> Unit,
     onWebViewCreated: (WebView) -> Unit,
     onLoadingStatusChanged: (Boolean) -> Unit,
     onProgressChanged: (Int) -> Unit,
     onHistoryChanged: (Boolean) -> Unit,
-    onPageLoadError: (String) -> Unit,
+    onPageLoadError: (String?) -> Unit,
     onLogEvent: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val attributionContext = remember(context) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            context.createAttributionContext("default_attribution")
-        } else {
-            context
+    
+    var pendingError by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(pendingError) {
+        if (pendingError != null) {
+            kotlinx.coroutines.delay(500)
+            onPageLoadError(pendingError)
+            pendingError = null
         }
     }
 
@@ -293,22 +274,6 @@ fun RngWebView(
                 ctx
             }
             WebView(viewContext).apply {
-                val sharedPrefs = viewContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-                val lastClearTime = sharedPrefs.getLong("last_cache_clear_time", 0L)
-                val currentTime = System.currentTimeMillis()
-                val cacheClearInterval = 24 * 60 * 60 * 1000L
-                if (isNetworkAvailable(viewContext) && (currentTime - lastClearTime > cacheClearInterval)) {
-                    clearCache(true)
-                    try {
-                        val baseCacheDir = java.io.File(viewContext.cacheDir, "WebView/Default/HTTP Cache/Code Cache")
-                        java.io.File(baseCacheDir, "js").mkdirs()
-                        java.io.File(baseCacheDir, "wasm").mkdirs()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                    sharedPrefs.edit().putLong("last_cache_clear_time", currentTime).apply()
-                }
-
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -377,19 +342,16 @@ fun RngWebView(
                 @Suppress("DEPRECATION")
                 settings.setRenderPriority(WebSettings.RenderPriority.HIGH)
 
-                settings.cacheMode = if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
+                settings.cacheMode = WebSettings.LOAD_DEFAULT
 
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                     android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode =
-                        if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
+                        WebSettings.LOAD_DEFAULT
                 }
 
-                val logsList = mutableListOf<String>()
                 fun addLog(msg: String) {
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        logsList.add(msg)
-                        if (logsList.size > 8) logsList.removeAt(0)
-                        onLogEvent(logsList.joinToString("\n"))
+                        onLogEvent(msg)
                     }
                 }
 
@@ -399,32 +361,7 @@ fun RngWebView(
                         request: WebResourceRequest?
                     ): android.webkit.WebResourceResponse? {
                         val requestUrl = request?.url?.toString() ?: return null
-
                         addLog("FETCH: ${request?.url?.path ?: requestUrl}")
-
-                        // Explicitly check server connectivity for main frame requests
-                        if (request.isForMainFrame && (requestUrl.startsWith("http://") || requestUrl.startsWith("https://"))) {
-                            try {
-                                val connection = java.net.URL(requestUrl).openConnection() as java.net.HttpURLConnection
-                                connection.requestMethod = "HEAD"
-                                connection.connectTimeout = 3000
-                                connection.readTimeout = 3000
-                                val responseCode = connection.responseCode
-                                val isLive = responseCode in 200..399
-
-                                addLog("HEAD [${responseCode}]: isLive=$isLive")
-
-                                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                    onOfflineStatusChanged(!isLive)
-                                }
-                            } catch (e: Exception) {
-                                addLog("HEAD FAIL: ${e.message}")
-                                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                    onOfflineStatusChanged(true)
-                                }
-                            }
-                        }
-
                         return super.shouldInterceptRequest(view, request)
                     }
 
@@ -446,6 +383,9 @@ fun RngWebView(
 
                     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                         super.onPageStarted(view, url, favicon)
+                        pendingError = null
+                        onPageLoadError(null)
+                        onProgressChanged(0)
                         onLoadingStatusChanged(true)
                         onHistoryChanged(view?.canGoBack() == true)
                     }
@@ -468,9 +408,15 @@ fun RngWebView(
                     ) {
                         super.onReceivedError(view, request, error)
                         addLog("ERR: ${error?.errorCode} ${error?.description}")
+                        
+                        // Ignore ERROR_ABORTED (-3) as it often happens during redirects or user cancellation
+                        if (error?.errorCode == -3) { // WebViewClient.ERROR_ABORTED
+                            return
+                        }
+
                         if (request?.isForMainFrame == true) {
                             val errorLog = "Error Code: ${error?.errorCode}\nDescription: ${error?.description}\nURL: ${request.url}"
-                            onPageLoadError(errorLog)
+                            pendingError = errorLog
                         }
                     }
 
@@ -481,9 +427,11 @@ fun RngWebView(
                     ) {
                         super.onReceivedHttpError(view, request, errorResponse)
                         addLog("HTTP_ERR: ${errorResponse?.statusCode} ${request?.url?.path}")
-                        if (request?.isForMainFrame == true) {
+                        
+                        // Only show error for main frame and for status codes that are actually errors (4xx, 5xx)
+                        if (request?.isForMainFrame == true && (errorResponse?.statusCode ?: 0) >= 400) {
                             val errorLog = "HTTP Error: ${errorResponse?.statusCode}\nReason: ${errorResponse?.reasonPhrase}\nURL: ${request.url}"
-                            onPageLoadError(errorLog)
+                            pendingError = errorLog
                         }
                     }
                 }
@@ -499,12 +447,8 @@ fun RngWebView(
                 onWebViewCreated(this)
             }
         },
-        update = { webView ->
-            webView.settings.cacheMode = if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                android.webkit.ServiceWorkerController.getInstance().serviceWorkerWebSettings.cacheMode =
-                    if (isOffline) WebSettings.LOAD_CACHE_ONLY else WebSettings.LOAD_DEFAULT
-            }
+        update = { _ ->
+            // No-op: cacheMode is now fixed to LOAD_DEFAULT in factory
         },
         modifier = modifier
     )
